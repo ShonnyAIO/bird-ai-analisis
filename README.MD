@@ -1,5 +1,7 @@
 # 🤖 Multi-Provider AI Proxy
 
+Version 1.0.1
+
 Este repositorio contiene la arquitectura y las instrucciones para un servidor Proxy que balancea peticiones entre múltiples proveedores de IA (LLMs). Unifica respuestas bajo un solo endpoint, maximiza el uso de capas gratuitas y evita bloqueos por límite de peticiones.
 
 **Implementado con Bun, Elysia, TypeScript y Swagger.**
