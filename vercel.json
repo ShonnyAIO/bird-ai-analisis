@@ -1,13 +1,5 @@
 {
     "version": 2,
-    "functions": {
-        "api/*.ts": {
-            "runtime": "bun"
-        },
-        "api/*.js": {
-            "runtime": "bun"
-        }
-    },
     "rewrites": [
         {
             "source": "/(.*)",

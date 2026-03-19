@@ -124,7 +124,10 @@ const app = new Elysia()
             description: 'Envía los prompts de curaduría y recibe directamente el objeto JSON de clasificación.'
         }
     })
-    .listen(process.env.PORT || 3000);
+
+if (!process.env.VERCEL) {
+    app.listen(process.env.PORT || 3000);
+}
 
 if (app.server) {
     console.log(`🚀 AI Proxy ejecutándose en ${app.server.hostname}:${app.server.port}`);
