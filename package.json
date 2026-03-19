@@ -1,12 +1,12 @@
 {
   "name": "multiprovider-proxy-ai",
-  "module": "src/index.ts",
+  "main": "api/index.js",
+  "module": "api/index.js",
   "type": "module",
-  "private": true,
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun build src/index.ts --outdir ./api --target browser --minify --bundle"
+    "build": "bun build src/index.ts --outdir ./api --target node --minify --bundle"
   },
   "devDependencies": {
     "@types/bun": "latest"

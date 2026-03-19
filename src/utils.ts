@@ -1,4 +1,4 @@
-import type { ChatMessage } from './types';
+import type { ChatMessage } from './types.js';
 
 /**
  * Expresión regular mejorada para detectar URLs de imágenes, 

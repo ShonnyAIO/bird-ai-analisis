@@ -1,6 +1,6 @@
 import { HfInference } from '@huggingface/inference';
-import type { AIService, ChatMessage } from '../types';
-import { prepareVisionMessages } from '../utils';
+import type { AIService, ChatMessage } from '../types.js';
+import { prepareVisionMessages } from '../utils.js';
 
 const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
 

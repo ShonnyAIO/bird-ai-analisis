@@ -1,15 +1,15 @@
 import { Elysia, t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
-// import { chatGptService } from './services/chatgpt';
-// import { deepSeekService } from './services/deepseek';
-import { geminiService } from './services/gemini';
-import { huggingFaceService } from './services/huggingface';
-// import { groqService } from './services/groq';
-// import { cerebrasService } from './services/cerebras';
-// import { openRouterService } from './services/openrouter';
-// import { togetherService } from './services/together';
-import type { AIService } from './types';
+// import { chatGptService } from './services/chatgpt.js';
+// import { deepSeekService } from './services/deepseek.js';
+import { geminiService } from './services/gemini.js';
+import { huggingFaceService } from './services/huggingface.js';
+// import { groqService } from './services/groq.js';
+// import { cerebrasService } from './services/cerebras.js';
+// import { openRouterService } from './services/openrouter.js';
+// import { togetherService } from './services/together.js';
+import type { AIService } from './types.js';
 
 // Proveedores registrados en el proxy
 const services: AIService[] = [
@@ -123,7 +123,7 @@ const app = new Elysia()
             summary: 'Clasificación de contenido artitístico (JSON)',
             description: 'Envía los prompts de curaduría y recibe directamente el objeto JSON de clasificación.'
         }
-    })
+    });
 
 if (!process.env.VERCEL) {
     app.listen(process.env.PORT || 3000);
