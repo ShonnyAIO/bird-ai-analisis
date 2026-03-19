@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --outdir ./api --target bun --minify --bundle"
   },
   "devDependencies": {
     "@types/bun": "latest"

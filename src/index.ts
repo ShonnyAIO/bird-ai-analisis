@@ -126,5 +126,9 @@ const app = new Elysia()
     })
     .listen(process.env.PORT || 3000);
 
-console.log(`🚀 AI Proxy ejecutándose en ${app.server?.hostname}:${app.server?.port}`);
-console.log(`📑 Documentación Swagger disponible en http://localhost:${app.server?.port}/swagger`);
+if (app.server) {
+    console.log(`🚀 AI Proxy ejecutándose en ${app.server.hostname}:${app.server.port}`);
+    console.log(`📑 Documentación Swagger disponible en http://localhost:${app.server.port}/swagger`);
+}
+
+export default app;
