@@ -49,24 +49,49 @@ const app = new Elysia()
     }))
     .get('/', () => ({ status: 'ok', message: 'AI Proxy is running' }))
     .post('/chat', async ({ body }) => {
-        const service = getNextService();
-        console.log(`[Proxy] Enrutando petición (Streaming) a proveedor: ${service.name}`);
-        console.log(`[Request] Messages:`, JSON.stringify(body.messages, null, 2));
-
         return new Response(new ReadableStream({
             async start(controller) {
-                let fullResponse = "";
-                try {
-                    for await (const chunk of service.chat(body.messages)) {
-                        fullResponse += chunk;
-                        controller.enqueue(new TextEncoder().encode(chunk));
+                let attempts = 0;
+                const maxAttempts = services.length;
+                let success = false;
+                let lastErrorText = "";
+
+                while (attempts < maxAttempts && !success) {
+                    const service = getNextService();
+                    console.log(`[Proxy] Enrutando petición (Streaming) a proveedor: ${service.name} (Intento ${attempts + 1}/${maxAttempts})`);
+                    console.log(`[Request] Messages:`, JSON.stringify(body.messages, null, 2));
+
+                    let fullResponse = "";
+                    let startedStreaming = false;
+
+                    try {
+                        for await (const chunk of service.chat(body.messages)) {
+                            startedStreaming = true;
+                            fullResponse += chunk;
+                            controller.enqueue(new TextEncoder().encode(chunk));
+                        }
+                        console.log(`[Response] Final (${service.name}):`, fullResponse);
+                        success = true;
+                    } catch (error) {
+                        console.error(`[Proxy] Stream error con proveedor ${service.name}:`, error instanceof Error ? error.message : String(error));
+                        lastErrorText = error instanceof Error ? error.message : String(error);
+                        attempts++;
+
+                        if (startedStreaming) {
+                            console.log(`[Proxy] El proveedor ${service.name} falló después de enviar datos. No se puede reintentar de forma segura.`);
+                            break;
+                        }
+
+                        console.log(`[Proxy] Reintentando con el siguiente proveedor...`);
                     }
-                } catch (error) {
-                    console.error("[Proxy] Stream error:", error);
-                } finally {
-                    console.log(`[Response] Final (${service.name}):`, fullResponse);
-                    controller.close();
                 }
+
+                if (!success) {
+                    console.error(`[Proxy] Todos los proveedores fallaron. Último error: ${lastErrorText}`);
+                    controller.enqueue(new TextEncoder().encode(`\n[Error de Proxy: Todos los proveedores fallaron. Error: ${lastErrorText}]`));
+                }
+
+                controller.close();
             }
         }), {
             headers: {
@@ -89,28 +114,51 @@ const app = new Elysia()
         }
     })
     .post('/classify', async ({ body }) => {
-        const service = getNextService();
-        console.log(`[Proxy] Enrutando petición (JSON) a proveedor: ${service.name}`);
-        console.log(`[Request] Messages:`, JSON.stringify(body.messages, null, 2));
+        let attempts = 0;
+        const maxAttempts = services.length;
+        let lastErrorText = "";
 
-        let fullResponse = "";
-        for await (const chunk of service.chat(body.messages)) {
-            fullResponse += chunk;
+        while (attempts < maxAttempts) {
+            const service = getNextService();
+            console.log(`[Proxy] Enrutando petición (JSON) a proveedor: ${service.name} (Intento ${attempts + 1}/${maxAttempts})`);
+            console.log(`[Request] Messages:`, JSON.stringify(body.messages, null, 2));
+
+            let fullResponse = "";
+            let streamSuccess = false;
+
+            try {
+                for await (const chunk of service.chat(body.messages)) {
+                    fullResponse += chunk;
+                }
+                streamSuccess = true;
+            } catch (error) {
+                console.error(`[Proxy] Error con proveedor ${service.name}:`, error instanceof Error ? error.message : String(error));
+                lastErrorText = error instanceof Error ? error.message : String(error);
+                attempts++;
+                console.log(`[Proxy] Reintentando con el siguiente proveedor...`);
+            }
+
+            if (streamSuccess) {
+                console.log(`[Response] Full (${service.name}):`, fullResponse);
+
+                try {
+                    // Intentamos limpiar posibles backticks de markdown que la IA a veces incluye
+                    const cleanJson = fullResponse.replace(/```json|```/g, '').trim();
+                    return JSON.parse(cleanJson);
+                } catch (error) {
+                    console.error(`[Proxy] Error parseando JSON de ${service.name}:`, error instanceof Error ? error.message : String(error));
+                    lastErrorText = error instanceof Error ? error.message : String(error);
+                    attempts++;
+                    console.log(`[Proxy] Respuesta JSON inválida. Reintentando con el siguiente proveedor...`);
+                }
+            }
         }
 
-        console.log(`[Response] Full (${service.name}):`, fullResponse);
-
-        try {
-            // Intentamos limpiar posibles backticks de markdown que la IA a veces incluye
-            const cleanJson = fullResponse.replace(/```json|```/g, '').trim();
-            return JSON.parse(cleanJson);
-        } catch (error) {
-            return {
-                status: "ERROR",
-                message: "Failed to parse AI response as JSON",
-                raw: fullResponse
-            };
-        }
+        return {
+            status: "ERROR",
+            message: "All AI providers failed or returned invalid JSON",
+            last_error: lastErrorText
+        };
     }, {
         body: t.Object({
             messages: t.Array(t.Object({
