@@ -1,7 +1,25 @@
+// Polyfill para Bun en entornos Node.js (como Vercel)
+if (typeof (globalThis as any).Bun === 'undefined') {
+    (globalThis as any).Bun = {
+        version: '1.2.21',
+        env: process.env,
+        file: () => ({
+            exists: async () => false,
+            size: 0,
+            text: async () => '',
+            json: async () => ({}),
+            stream: () => new ReadableStream(),
+        }),
+        gc: () => { },
+        serve: () => ({ stop: () => { } }),
+        semver: { satisfy: () => false }
+    };
+}
+
 import { Elysia, t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
-import { staticPlugin } from '@elysiajs/static';
+// import { staticPlugin } from '@elysiajs/static';
 // import { chatGptService } from './services/chatgpt.js';
 // import { deepSeekService } from './services/deepseek.js';
 // import { geminiService } from './services/gemini.js';
@@ -42,10 +60,6 @@ const app = new Elysia()
         methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization']
     }))
-    .use(staticPlugin({
-        assets: 'public',
-        prefix: '/'
-    }))
     .use(swagger({
         documentation: {
             info: {
@@ -58,7 +72,7 @@ const app = new Elysia()
             ]
         }
     }))
-    .get('/', () => Bun.file('public/index.html'))
+    .get('/', () => 'AI Proxy is running')
     .get('/status', () => ({ status: 'ok', message: 'AI Proxy is running' }))
     .post('/chat', async ({ body }) => {
         return new Response(new ReadableStream({
