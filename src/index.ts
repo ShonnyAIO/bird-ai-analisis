@@ -36,9 +36,7 @@ const contentSchema = t.Union([
     }))
 ]);
 
-const app = new Elysia({
-    bodyLimit: '20mb'
-})
+const app = new Elysia()
     .use(cors({
         origin: ['*'], // Puedes cambiar esto por los dominios permitidos
         methods: ['GET', 'POST', 'OPTIONS'],

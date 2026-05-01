@@ -1,10 +1,12 @@
-# 🚀 Guía de Despliegue en Vercel (Edge Runtime)
+# 🚀 Guía de Despliegue en Vercel
 
-Este proyecto está optimizado para ejecutarse en **Vercel** utilizando el **Edge Runtime**, lo que garantiza una latencia mínima y un rendimiento excepcional.
+Este proyecto está optimizado para ejecutarse en **Vercel** de forma sencilla y eficiente, aprovechando la potencia de **Bun**.
 
 ## 1. Configuración de Vercel
 
-La aplicación utiliza un archivo `vercel.json` que redirige las peticiones de la API al servidor y sirve los archivos estáticos desde la carpeta `public/`.
+La aplicación utiliza un archivo `vercel.json` que gestiona las rutas automáticamente:
+- Las peticiones de la API se dirigen al bundle generado en `api/index.js`.
+- Los archivos estáticos se sirven directamente desde la carpeta `public/`.
 
 ### Requisitos previos
 - Una cuenta en [Vercel](https://vercel.com).
@@ -13,8 +15,8 @@ La aplicación utiliza un archivo `vercel.json` que redirige las peticiones de l
 ### Pasos para el despliegue mediante CLI
 1. Abre una terminal en la raíz del proyecto.
 2. Ejecuta `vercel` para vincular y configurar el proyecto.
-3. Responde **No** cuando pregunte si quieres usar los ajustes por defecto de Vercel (para asegurar que use nuestra configuración de `vercel.json`).
-4. Añade tu clave de HuggingFace:
+3. El **Framework Preset** debería ser detectado como **Other**.
+4. Añade tu clave de HuggingFace en el panel de Vercel o vía CLI:
    ```bash
    vercel env add HUGGINGFACE_API_KEY
    ```
@@ -25,20 +27,13 @@ La aplicación utiliza un archivo `vercel.json` que redirige las peticiones de l
 
 ## 2. Variables de Entorno (Environment Variables)
 
-Para el funcionamiento actual (HuggingFace Edition), solo necesitas:
+Para el funcionamiento actual (HuggingFace Edition), es obligatorio configurar:
 
-- `HUGGINGFACE_API_KEY`: Tu token de Hugging Face (puedes obtenerlo en [hf.co/settings/tokens](https://huggingface.co/settings/tokens)).
+- `HUGGINGFACE_API_KEY`: Tu token de Hugging Face.
 
-*Opcional*: Si decides habilitar otros proveedores en `src/index.ts`, deberás añadir sus respectivas claves (`OPENAI_API_KEY`, `GEMINI_API_KEY`, etc.).
+## 3. Funcionamiento de la API
 
-## 3. Ventajas del Edge Runtime
-- **Streaming Instantáneo**: Las respuestas de IA se envían al navegador sin esperar a que se genere todo el texto.
-- **Sin Arranque en Frío (Cold Starts)**: A diferencia de las funciones Serverless tradicionales, las funciones en el Edge están siempre "calientes".
-- **Global**: Tu proxy se ejecutará en la región más cercana al usuario que hace la petición.
-
-## 4. Uso de la API y Swagger
-
-Una vez desplegado, puedes acceder a la interfaz de Swagger para probar la API en:
+Una vez desplegado, el servidor de Elysia manejará tanto el streaming de texto como las respuestas JSON para clasificación. Puedes probar la API en:
 `https://tu-proyecto.vercel.app/swagger`
 
 ---
