@@ -19,6 +19,8 @@ if (typeof (globalThis as any).Bun === 'undefined') {
 import { Elysia, t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
+import { readFileSync } from 'fs';
+import path from 'path';
 // import { staticPlugin } from '@elysiajs/static';
 // import { chatGptService } from './services/chatgpt.js';
 // import { deepSeekService } from './services/deepseek.js';
@@ -72,7 +74,29 @@ const app = new Elysia()
             ]
         }
     }))
-    .get('/', () => 'AI Proxy is running')
+    .get('/', () => {
+        try {
+            return new Response(readFileSync(path.join(process.cwd(), 'public/index.html')), {
+                headers: { 'Content-Type': 'text/html' }
+            });
+        } catch (e) {
+            return 'AI Proxy is running (Frontend not found)';
+        }
+    })
+    .get('/style.css', () => {
+        try {
+            return new Response(readFileSync(path.join(process.cwd(), 'public/style.css')), {
+                headers: { 'Content-Type': 'text/css' }
+            });
+        } catch (e) { return new Response('', { status: 404 }); }
+    })
+    .get('/app.js', () => {
+        try {
+            return new Response(readFileSync(path.join(process.cwd(), 'public/app.js')), {
+                headers: { 'Content-Type': 'application/javascript' }
+            });
+        } catch (e) { return new Response('', { status: 404 }); }
+    })
     .get('/status', () => ({ status: 'ok', message: 'AI Proxy is running' }))
     .post('/chat', async ({ body }) => {
         return new Response(new ReadableStream({
