@@ -1,5 +1,6 @@
 import Groq from 'groq-sdk';
-import type { AIService, ChatMessage } from '../types';
+import type { AIService, ChatMessage } from '../types.js';
+import { prepareVisionMessages } from '../utils.js';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -8,21 +9,7 @@ export const groqService: AIService = {
     async *chat(messages: ChatMessage[]) {
         try {
             // Detectar URLs de imágenes y formatear mensajes para multimodal
-            const formattedMessages = messages.map(m => {
-                const imageUrls = m.content.match(/https?:\/\/\S+\.(?:png|jpg|jpeg|webp|gif)/gi);
-
-                if (imageUrls && imageUrls.length > 0) {
-                    const contentParts: any[] = [{ type: 'text', text: m.content }];
-                    imageUrls.forEach(url => {
-                        contentParts.push({
-                            type: 'image_url',
-                            image_url: { url }
-                        });
-                    });
-                    return { role: m.role, content: contentParts };
-                }
-                return m;
-            });
+            const formattedMessages = await prepareVisionMessages(messages);
 
             const stream = await groq.chat.completions.create({
                 messages: formattedMessages as any[],

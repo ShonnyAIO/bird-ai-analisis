@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import type { AIService, ChatMessage } from '../types';
-import { prepareVisionMessages } from '../utils';
+import type { AIService, ChatMessage } from '../types.js';
+import { prepareVisionMessages } from '../utils.js';
 
 const together = new OpenAI({
     apiKey: process.env.TOGETHER_API_KEY,

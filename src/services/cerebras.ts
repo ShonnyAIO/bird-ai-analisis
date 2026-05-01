@@ -1,5 +1,6 @@
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
-import type { AIService, ChatMessage } from '../types';
+import type { AIService, ChatMessage } from '../types.js';
+import { prepareVisionMessages } from '../utils.js';
 
 const cerebras = new Cerebras({
     apiKey: process.env.CEREBRAS_API_KEY
@@ -10,21 +11,7 @@ export const cerebrasService: AIService = {
     async *chat(messages: ChatMessage[]) {
         try {
             // Detectar URLs de imágenes y formatear mensajes para multimodal
-            const formattedMessages = messages.map(m => {
-                const imageUrls = m.content.match(/https?:\/\/\S+\.(?:png|jpg|jpeg|webp|gif)/gi);
-
-                if (imageUrls && imageUrls.length > 0) {
-                    const contentParts: any[] = [{ type: 'text', text: m.content }];
-                    imageUrls.forEach(url => {
-                        contentParts.push({
-                            type: 'image_url',
-                            image_url: { url }
-                        });
-                    });
-                    return { role: m.role, content: contentParts };
-                }
-                return m;
-            });
+            const formattedMessages = await prepareVisionMessages(messages);
 
             const stream = await cerebras.chat.completions.create({
                 messages: formattedMessages as any[],

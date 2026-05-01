@@ -1,8 +1,16 @@
 export type ChatRole = 'user' | 'assistant' | 'system';
 
+export interface MessagePart {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: {
+    url: string; // This can be a base64 string or a URL
+  };
+}
+
 export interface ChatMessage {
   role: ChatRole;
-  content: string;
+  content: string | MessagePart[];
 }
 
 export interface AIService {

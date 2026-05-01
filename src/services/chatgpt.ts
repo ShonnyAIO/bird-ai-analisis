@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
-import type { AIService, ChatMessage } from '../types';
+import type { AIService, ChatMessage } from '../types.js';
+import { prepareVisionMessages } from '../utils.js';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -7,9 +8,10 @@ export const chatGptService: AIService = {
     name: 'ChatGPT',
     async *chat(messages: ChatMessage[]) {
         try {
+            const formattedMessages = await prepareVisionMessages(messages);
             const stream = await openai.chat.completions.create({
                 model: 'gpt-4o-mini',
-                messages: messages as any[],
+                messages: formattedMessages as any[],
                 stream: true,
             });
 

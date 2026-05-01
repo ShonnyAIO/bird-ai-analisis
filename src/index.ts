@@ -1,9 +1,10 @@
 import { Elysia, t } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
+import { staticPlugin } from '@elysiajs/static';
 // import { chatGptService } from './services/chatgpt.js';
 // import { deepSeekService } from './services/deepseek.js';
-import { geminiService } from './services/gemini.js';
+// import { geminiService } from './services/gemini.js';
 import { huggingFaceService } from './services/huggingface.js';
 // import { groqService } from './services/groq.js';
 // import { cerebrasService } from './services/cerebras.js';
@@ -13,12 +14,7 @@ import type { AIService } from './types.js';
 
 // Proveedores registrados en el proxy
 const services: AIService[] = [
-    geminiService,
     huggingFaceService
-    // togetherService,
-    // cerebrasService,
-    // groqService,
-    // openRouterService,
 ];
 
 let currentServiceIndex = 0;
@@ -29,11 +25,28 @@ function getNextService(): AIService {
     return service!;
 }
 
-const app = new Elysia()
+const contentSchema = t.Union([
+    t.String(),
+    t.Array(t.Object({
+        type: t.Union([t.Literal('text'), t.Literal('image_url')]),
+        text: t.Optional(t.String()),
+        image_url: t.Optional(t.Object({
+            url: t.String()
+        }))
+    }))
+]);
+
+const app = new Elysia({
+    bodyLimit: '20mb'
+})
     .use(cors({
         origin: ['*'], // Puedes cambiar esto por los dominios permitidos
         methods: ['GET', 'POST', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization']
+    }))
+    .use(staticPlugin({
+        assets: 'public',
+        prefix: '/'
     }))
     .use(swagger({
         documentation: {
@@ -47,7 +60,8 @@ const app = new Elysia()
             ]
         }
     }))
-    .get('/', () => ({ status: 'ok', message: 'AI Proxy is running' }))
+    .get('/', () => Bun.file('public/index.html'))
+    .get('/status', () => ({ status: 'ok', message: 'AI Proxy is running' }))
     .post('/chat', async ({ body }) => {
         return new Response(new ReadableStream({
             async start(controller) {
@@ -59,13 +73,14 @@ const app = new Elysia()
                 while (attempts < maxAttempts && !success) {
                     const service = getNextService();
                     console.log(`[Proxy] Enrutando petición (Streaming) a proveedor: ${service.name} (Intento ${attempts + 1}/${maxAttempts})`);
-                    console.log(`[Request] Messages:`, JSON.stringify(body.messages, null, 2));
+                    // Omitimos log de body.messages si contiene base64 muy largo
+                    console.log(`[Request] Messages received`);
 
                     let fullResponse = "";
                     let startedStreaming = false;
 
                     try {
-                        for await (const chunk of service.chat(body.messages)) {
+                        for await (const chunk of service.chat(body.messages as any)) {
                             startedStreaming = true;
                             fullResponse += chunk;
                             controller.enqueue(new TextEncoder().encode(chunk));
@@ -104,7 +119,7 @@ const app = new Elysia()
         body: t.Object({
             messages: t.Array(t.Object({
                 role: t.Union([t.Literal('user'), t.Literal('assistant'), t.Literal('system')]),
-                content: t.String()
+                content: contentSchema
             }))
         }),
         detail: {
@@ -121,13 +136,12 @@ const app = new Elysia()
         while (attempts < maxAttempts) {
             const service = getNextService();
             console.log(`[Proxy] Enrutando petición (JSON) a proveedor: ${service.name} (Intento ${attempts + 1}/${maxAttempts})`);
-            console.log(`[Request] Messages:`, JSON.stringify(body.messages, null, 2));
-
+            
             let fullResponse = "";
             let streamSuccess = false;
 
             try {
-                for await (const chunk of service.chat(body.messages)) {
+                for await (const chunk of service.chat(body.messages as any)) {
                     fullResponse += chunk;
                 }
                 streamSuccess = true;
@@ -163,7 +177,7 @@ const app = new Elysia()
         body: t.Object({
             messages: t.Array(t.Object({
                 role: t.Union([t.Literal('user'), t.Literal('assistant'), t.Literal('system')]),
-                content: t.String()
+                content: contentSchema
             }))
         }),
         detail: {
@@ -171,15 +185,84 @@ const app = new Elysia()
             summary: 'Clasificación de contenido artitístico (JSON)',
             description: 'Envía los prompts de curaduría y recibe directamente el objeto JSON de clasificación.'
         }
+    })
+    .post('/api/analyze', async ({ body }) => {
+        const { image, command } = body;
+        
+        // Convertimos el formato de BioIdent al formato de Chat
+        const messages = [
+            {
+                role: 'user' as const,
+                content: [
+                    { type: 'text', text: command || '¿Qué es esto? Identifícalo brevemente.' },
+                    { type: 'image_url', image_url: { url: image } }
+                ]
+            }
+        ];
+
+        let attempts = 0;
+        const maxAttempts = services.length;
+        let lastErrorText = "";
+
+        while (attempts < maxAttempts) {
+            const service = getNextService();
+            console.log(`[Proxy] /api/analyze -> Enrutando a: ${service.name}`);
+            
+            let fullResponse = "";
+            let success = false;
+
+            try {
+                for await (const chunk of service.chat(messages as any)) {
+                    fullResponse += chunk;
+                }
+                success = true;
+            } catch (error) {
+                console.error(`[Proxy] Error en /api/analyze con ${service.name}:`, error);
+                lastErrorText = error instanceof Error ? error.message : String(error);
+                attempts++;
+            }
+
+            if (success) {
+                return {
+                    success: true,
+                    identification: fullResponse,
+                    additionalInfo: `Analizado por ${service.name} (Proxy)`,
+                    command: command
+                };
+            }
+        }
+
+        return {
+            success: false,
+            error: "Todos los proveedores fallaron",
+            details: lastErrorText
+        };
+    }, {
+        body: t.Object({
+            image: t.String(),
+            command: t.Optional(t.String())
+        })
     });
 
-if (!process.env.VERCEL) {
-    app.listen(process.env.PORT || 3000);
-}
+const startServer = (port: number) => {
+    try {
+        app.listen(port, ({ hostname, port }) => {
+            console.log(`🚀 AI Proxy ejecutándose en http://${hostname}:${port}`);
+            console.log(`📑 Documentación Swagger disponible en http://${hostname}:${port}/swagger`);
+        });
+    } catch (error: any) {
+        if (error.code === 'EADDRINUSE') {
+            console.log(`⚠️ Puerto ${port} ocupado, intentando con ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error('❌ Error al iniciar el servidor:', error);
+        }
+    }
+};
 
-if (app.server) {
-    console.log(`🚀 AI Proxy ejecutándose en ${app.server.hostname}:${app.server.port}`);
-    console.log(`📑 Documentación Swagger disponible en http://localhost:${app.server.port}/swagger`);
+if (!process.env.VERCEL) {
+    const initialPort = parseInt(process.env.PORT || '3001');
+    startServer(initialPort);
 }
 
 export default app;

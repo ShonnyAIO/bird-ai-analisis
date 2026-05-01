@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
-import type { AIService, ChatMessage } from '../types';
+import type { AIService, ChatMessage } from '../types.js';
+import { prepareVisionMessages } from '../utils.js';
 
 const deepseek = new OpenAI({
     baseURL: 'https://api.deepseek.com',
@@ -10,9 +11,10 @@ export const deepSeekService: AIService = {
     name: 'DeepSeek',
     async *chat(messages: ChatMessage[]) {
         try {
+            const formattedMessages = await prepareVisionMessages(messages);
             const stream = await deepseek.chat.completions.create({
                 model: 'deepseek-chat',
-                messages: messages as any[],
+                messages: formattedMessages as any[],
                 stream: true,
             });
 

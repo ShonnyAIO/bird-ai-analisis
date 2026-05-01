@@ -1,0 +1,15 @@
+services:
+  app:
+    image: oven/bun:1
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+    env_file:
+      - .env
+    command: bun run dev
+    restart: unless-stopped

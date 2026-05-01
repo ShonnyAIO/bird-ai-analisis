@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BirdID - Identificador de Aves</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-dove"></i> BirdID</h1>
+            <p>Sube una foto y descubre la historia detrás de cada ave</p>
+        </header>
+
+        <main>
+            <div class="upload-section" id="drop-area">
+                <input type="file" id="file-input" accept="image/*" hidden>
+                <div class="upload-content" id="upload-content">
+                    <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                    <p>Arrastra tu imagen aquí o haz clic para buscar</p>
+                    <span>Soporta JPG, PNG, WEBP</span>
+                </div>
+                <div class="preview-container" id="preview-container" style="display: none;">
+                    <img id="image-preview" src="" alt="Vista previa">
+                    <button id="remove-image" class="btn-remove"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <div class="prompt-container">
+                    <label for="custom-prompt"><i class="fas fa-comment-dots"></i> ¿Qué quieres saber sobre esta imagen?</label>
+                    <textarea id="custom-prompt" placeholder="Ej: Identifica esta ave y cuéntame su historia, o describe el paisaje..."></textarea>
+                </div>
+                <button id="identify-btn" class="btn-primary" disabled>
+                    <i class="fas fa-magic"></i> Procesar Imagen
+                </button>
+            </div>
+
+            <div class="result-section" id="result-section" style="display: none;">
+                <h2><i class="fas fa-info-circle"></i> Resultado</h2>
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Analizando imagen...</p>
+                </div>
+                <div id="response-content" class="response-content"></div>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-section academic-info">
+                    <p class="author-name">Jonathan Torres</p>
+                    <p class="institution">Universidad Central de Venezuela</p>
+                    <p class="course-name">Enfoques y Métodos de Investigación en Ciencias de la Computación (6566)</p>
+                </div>
+                <div class="footer-separator"></div>
+                <div class="footer-section tech-info">
+                    <p>&copy; 2026 BirdID • Powered by <strong>HuggingFace</strong> via AI Proxy</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
